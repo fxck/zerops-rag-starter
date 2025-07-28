@@ -3,7 +3,7 @@ zerops:
     build:
       deployFiles: ./api/~
       addToRunPrepare:
-        - .api/requirements.txt
+        - ./api/requirements.txt
     run:
       base: python@3.11
       ports:
