@@ -31,10 +31,11 @@ zerops:
       addToRunPrepare:
         - ./processor/requirements.txt
     run:
+      os: ubuntu
       base: python@3.11
       prepareCommands:
         - echo "System info:" && uname -a && python3 --version && pip --version
-        - sudo apk add --no-cache build-base gcc g++ musl-dev linux-headers
+        - sudo apt-get update && sudo apt-get install -y build-essential
         - sudo uv pip install --system torch==2.1.0 --index-url https://download.pytorch.org/whl/cpu
         - sudo uv pip install --system -r ./processor/requirements.txt
       start: python processor.py
