@@ -34,24 +34,28 @@ services:
   - hostname: db
     type: postgresql@16
     mode: NON_HA
+    priority: 100
 
   - hostname: cache
     type: valkey@7.2
     mode: NON_HA
+    priority: 100
 
   - hostname: queue
     type: nats@2.10
     mode: NON_HA
+    priority: 100
 
   - hostname: qdrant
     type: qdrant@1.12
     mode: NON_HA
+    priority: 100
 
   - hostname: storage
     type: object-storage
     objectStorageSize: 2
     objectStoragePolicy: public-read
-    priority: 10
+    priority: 100
 
   - hostname: api
     type: python@3.11
@@ -61,6 +65,7 @@ services:
     maxContainers: 1
     envSecrets:
       WORKERS: "1"
+    priority: 50
 
   - hostname: processor
     type: python@3.11
