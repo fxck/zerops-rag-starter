@@ -5,7 +5,7 @@ zerops:
       addToRunPrepare:
         - ./api/requirements.txt
     run:
-      base: python@3.12
+      base: python@3.11
       ports:
         - port: 8000
           httpSupport: true
@@ -31,7 +31,7 @@ zerops:
       addToRunPrepare:
         - ./processor/requirements.txt
     run:
-      base: python@3.12
+      base: python@3.11
       prepareCommands:
         - sudo uv pip install --system -r ./processor/requirements.txt
       start: python processor.py

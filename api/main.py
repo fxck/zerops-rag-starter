@@ -31,17 +31,21 @@ async def startup():
     global nc, db_pool, s3, redis_client
     import asyncio
     import time
-    import psutil
     import logging
+    import resource
     
     # Configure logging
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     logger = logging.getLogger(__name__)
     
-    # Log memory usage
-    process = psutil.Process()
-    memory_info = process.memory_info()
-    logger.info(f"Startup memory usage: {memory_info.rss / 1024 / 1024:.2f}MB")
+    # Log memory usage (using resource module instead of psutil)
+    try:
+        memory_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        # On Linux, ru_maxrss is in KB, on macOS it's in bytes
+        memory_mb = memory_kb / 1024 if memory_kb > 100000 else memory_kb / (1024 * 1024)
+        logger.info(f"Startup memory usage: {memory_mb:.2f}MB")
+    except Exception as e:
+        logger.info(f"Could not get memory usage: {e}")
 
     # NATS connection with authentication and retry
     logger.info("Starting NATS connection...")
@@ -62,8 +66,12 @@ async def startup():
 
     # PostgreSQL connection with retry
     logger.info("Starting PostgreSQL connection...")
-    memory_info = process.memory_info()
-    logger.info(f"Memory before DB connection: {memory_info.rss / 1024 / 1024:.2f}MB")
+    try:
+        memory_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        memory_mb = memory_kb / 1024 if memory_kb > 100000 else memory_kb / (1024 * 1024)
+        logger.info(f"Memory before DB connection: {memory_mb:.2f}MB")
+    except:
+        pass
     for attempt in range(10):
         try:
             db_pool = await asyncpg.create_pool(
@@ -126,8 +134,12 @@ async def startup():
         """)
     
     # Final memory check
-    memory_info = process.memory_info()
-    logger.info(f"Startup complete. Final memory usage: {memory_info.rss / 1024 / 1024:.2f}MB")
+    try:
+        memory_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        memory_mb = memory_kb / 1024 if memory_kb > 100000 else memory_kb / (1024 * 1024)
+        logger.info(f"Startup complete. Final memory usage: {memory_mb:.2f}MB")
+    except Exception as e:
+        logger.info(f"Could not get final memory usage: {e}")
 
 @app.post("/upload")
 async def upload_document(file: UploadFile = File(...)):

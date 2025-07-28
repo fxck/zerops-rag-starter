@@ -63,7 +63,7 @@ services:
       WORKERS: "1"
 
   - hostname: processor
-    type: python@3.12
+    type: python@3.11
     buildFromGit: https://github.com/fxck/zerops-rag-starter
     minContainers: 1
     maxContainers: 1

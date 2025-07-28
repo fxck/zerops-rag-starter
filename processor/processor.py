@@ -6,7 +6,7 @@ import boto3
 import httpx
 import os
 import logging
-import psutil
+import resource
 from sentence_transformers import SentenceTransformer
 
 # Configure logging
@@ -30,14 +30,22 @@ def get_model():
     global model
     if model is None:
         logger.info("Loading sentence transformer model...")
-        process = psutil.Process()
-        memory_before = process.memory_info().rss / 1024 / 1024
-        logger.info(f"Memory before model loading: {memory_before:.2f}MB")
+        try:
+            memory_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+            memory_before = memory_kb / 1024 if memory_kb > 100000 else memory_kb / (1024 * 1024)
+            logger.info(f"Memory before model loading: {memory_before:.2f}MB")
+        except:
+            logger.info("Memory tracking not available")
+            memory_before = 0
         
         model = SentenceTransformer('all-MiniLM-L6-v2')  # Small, fast model
         
-        memory_after = process.memory_info().rss / 1024 / 1024
-        logger.info(f"Memory after model loading: {memory_after:.2f}MB (delta: {memory_after - memory_before:.2f}MB)")
+        try:
+            memory_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+            memory_after = memory_kb / 1024 if memory_kb > 100000 else memory_kb / (1024 * 1024)
+            logger.info(f"Memory after model loading: {memory_after:.2f}MB (delta: {memory_after - memory_before:.2f}MB)")
+        except:
+            logger.info("Model loaded successfully")
     return model
 
 async def process_document(msg):
@@ -104,9 +112,12 @@ async def process_document(msg):
 
 async def main():
     # Log startup memory
-    process = psutil.Process()
-    memory_info = process.memory_info()
-    logger.info(f"Processor startup memory usage: {memory_info.rss / 1024 / 1024:.2f}MB")
+    try:
+        memory_kb = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+        memory_mb = memory_kb / 1024 if memory_kb > 100000 else memory_kb / (1024 * 1024)
+        logger.info(f"Processor startup memory usage: {memory_mb:.2f}MB")
+    except Exception as e:
+        logger.info(f"Could not get startup memory usage: {e}")
     
     logger.info("Connecting to NATS...")
     nc = await nats.connect(
