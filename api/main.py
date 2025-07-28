@@ -143,8 +143,12 @@ async def startup():
 
 @app.post("/upload")
 async def upload_document(file: UploadFile = File(...)):
+    import logging
+    logger = logging.getLogger(__name__)
+    
     # Generate unique ID
     doc_id = str(uuid.uuid4())
+    logger.info(f"Starting upload for file: {file.filename}, assigned ID: {doc_id}")
 
     # Save to S3
     s3.put_object(
@@ -152,6 +156,7 @@ async def upload_document(file: UploadFile = File(...)):
         Key=f"documents/{doc_id}.pdf",
         Body=await file.read()
     )
+    logger.info(f"File {doc_id} saved to S3 successfully")
 
     # Save metadata to PostgreSQL
     async with db_pool.acquire() as conn:
@@ -159,12 +164,14 @@ async def upload_document(file: UploadFile = File(...)):
             INSERT INTO documents (id, filename)
             VALUES ($1, $2)
         """, doc_id, file.filename)
+    logger.info(f"File {doc_id} metadata saved to PostgreSQL")
 
     # Queue for processing
     await nc.publish("document.process", json.dumps({
         "id": doc_id,
         "filename": file.filename
     }).encode())
+    logger.info(f"File {doc_id} queued for processing via NATS")
 
     return {"id": doc_id, "status": "queued"}
 
@@ -231,8 +238,8 @@ async def status():
     # Check Qdrant
     try:
         async with httpx.AsyncClient() as client:
-            await client.get(
-                f"{os.getenv('QDRANT_URL')}/health",
+            response = await client.get(
+                f"{os.getenv('QDRANT_URL')}/",
                 headers={"api-key": os.getenv("QDRANT_API_KEY")},
                 timeout=2
             )

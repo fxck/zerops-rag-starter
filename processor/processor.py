@@ -119,6 +119,11 @@ async def main():
     except Exception as e:
         logger.info(f"Could not get startup memory usage: {e}")
     
+    # Preload the model during startup
+    logger.info("Preloading sentence transformer model...")
+    get_model()
+    logger.info("Model preloaded successfully")
+    
     logger.info("Connecting to NATS...")
     nc = await nats.connect(
         os.getenv("NATS_URL"),
