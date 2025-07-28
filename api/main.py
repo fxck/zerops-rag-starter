@@ -29,22 +29,40 @@ redis_client = None
 @app.on_event("startup")
 async def startup():
     global nc, db_pool, s3, redis_client
+    import asyncio
+    import time
 
-    # NATS connection with authentication
-    nc = await nats.connect(
-        os.getenv("NATS_URL"),
-        user=os.getenv("NATS_USER"),
-        password=os.getenv("NATS_PASSWORD")
-    )
+    # NATS connection with authentication and retry
+    for attempt in range(5):
+        try:
+            nc = await nats.connect(
+                os.getenv("NATS_URL"),
+                user=os.getenv("NATS_USER"),
+                password=os.getenv("NATS_PASSWORD")
+            )
+            break
+        except Exception as e:
+            print(f"NATS connection attempt {attempt + 1} failed: {e}")
+            if attempt == 4:
+                raise
+            await asyncio.sleep(2 ** attempt)
 
-    # PostgreSQL connection
-    db_pool = await asyncpg.create_pool(
-        host=os.getenv("DB_HOST"),
-        port=int(os.getenv("DB_PORT", 5432)),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD")
-    )
+    # PostgreSQL connection with retry
+    for attempt in range(10):
+        try:
+            db_pool = await asyncpg.create_pool(
+                host=os.getenv("DB_HOST"),
+                port=int(os.getenv("DB_PORT", 5432)),
+                database=os.getenv("DB_NAME"),
+                user=os.getenv("DB_USER"),
+                password=os.getenv("DB_PASSWORD")
+            )
+            break
+        except Exception as e:
+            print(f"Database connection attempt {attempt + 1} failed: {e}")
+            if attempt == 9:
+                raise
+            await asyncio.sleep(2 ** min(attempt, 4))
 
     # S3 client
     s3 = boto3.client(
@@ -56,12 +74,21 @@ async def startup():
         region_name=os.getenv("AWS_REGION", "us-east-1")
     )
 
-    # Redis client (no auth needed)
-    redis_client = redis.Redis(
-        host=os.getenv("REDIS_HOST"),
-        port=6379,
-        decode_responses=True
-    )
+    # Redis client with retry
+    for attempt in range(5):
+        try:
+            redis_client = redis.Redis(
+                host=os.getenv("REDIS_HOST"),
+                port=6379,
+                decode_responses=True
+            )
+            redis_client.ping()  # Test connection
+            break
+        except Exception as e:
+            print(f"Redis connection attempt {attempt + 1} failed: {e}")
+            if attempt == 4:
+                raise
+            await asyncio.sleep(2 ** attempt)
 
     # Initialize database schema
     async with db_pool.acquire() as conn:
