@@ -2,7 +2,7 @@ project:
   name: zerops-rag-starter
   envVariables:
     # PostgreSQL connection
-    DB_HOST: ${db_host}
+    DB_HOST: ${db_hostname}
     DB_PORT: ${db_port}
     DB_NAME: ${db_database}
     DB_USER: ${db_user}
