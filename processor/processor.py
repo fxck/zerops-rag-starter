@@ -5,7 +5,13 @@ import json
 import boto3
 import httpx
 import os
+import logging
+import psutil
 from sentence_transformers import SentenceTransformer
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 # Initialize services
 s3 = boto3.client(
@@ -17,7 +23,22 @@ s3 = boto3.client(
     region_name=os.getenv("AWS_REGION", "us-east-1")
 )
 
-model = SentenceTransformer('all-MiniLM-L6-v2')  # Small, fast model
+# Initialize model lazily to save memory
+model = None
+
+def get_model():
+    global model
+    if model is None:
+        logger.info("Loading sentence transformer model...")
+        process = psutil.Process()
+        memory_before = process.memory_info().rss / 1024 / 1024
+        logger.info(f"Memory before model loading: {memory_before:.2f}MB")
+        
+        model = SentenceTransformer('all-MiniLM-L6-v2')  # Small, fast model
+        
+        memory_after = process.memory_info().rss / 1024 / 1024
+        logger.info(f"Memory after model loading: {memory_after:.2f}MB (delta: {memory_after - memory_before:.2f}MB)")
+    return model
 
 async def process_document(msg):
     data = json.loads(msg.data.decode())
@@ -46,6 +67,7 @@ async def process_document(msg):
         text = content.decode('utf-8', errors='ignore')[:500]
 
         # Create embedding
+        model = get_model()
         embedding = model.encode(text).tolist()
 
         # Store in Qdrant
@@ -81,16 +103,24 @@ async def process_document(msg):
         await conn.close()
 
 async def main():
+    # Log startup memory
+    process = psutil.Process()
+    memory_info = process.memory_info()
+    logger.info(f"Processor startup memory usage: {memory_info.rss / 1024 / 1024:.2f}MB")
+    
+    logger.info("Connecting to NATS...")
     nc = await nats.connect(
         os.getenv("NATS_URL"),
         user=os.getenv("NATS_USER"),
         password=os.getenv("NATS_PASSWORD")
     )
+    logger.info("NATS connection successful")
 
     # Subscribe to processing queue
     sub = await nc.subscribe("document.process", cb=process_document)
+    logger.info("Subscribed to document.process queue")
 
-    print("Processor started, waiting for documents...")
+    logger.info("Processor started, waiting for documents...")
 
     # Keep running
     await asyncio.Event().wait()

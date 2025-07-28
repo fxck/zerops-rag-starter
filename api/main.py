@@ -31,8 +31,20 @@ async def startup():
     global nc, db_pool, s3, redis_client
     import asyncio
     import time
+    import psutil
+    import logging
+    
+    # Configure logging
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    logger = logging.getLogger(__name__)
+    
+    # Log memory usage
+    process = psutil.Process()
+    memory_info = process.memory_info()
+    logger.info(f"Startup memory usage: {memory_info.rss / 1024 / 1024:.2f}MB")
 
     # NATS connection with authentication and retry
+    logger.info("Starting NATS connection...")
     for attempt in range(5):
         try:
             nc = await nats.connect(
@@ -40,14 +52,18 @@ async def startup():
                 user=os.getenv("NATS_USER"),
                 password=os.getenv("NATS_PASSWORD")
             )
+            logger.info("NATS connection successful")
             break
         except Exception as e:
-            print(f"NATS connection attempt {attempt + 1} failed: {e}")
+            logger.error(f"NATS connection attempt {attempt + 1} failed: {e}")
             if attempt == 4:
                 raise
             await asyncio.sleep(2 ** attempt)
 
     # PostgreSQL connection with retry
+    logger.info("Starting PostgreSQL connection...")
+    memory_info = process.memory_info()
+    logger.info(f"Memory before DB connection: {memory_info.rss / 1024 / 1024:.2f}MB")
     for attempt in range(10):
         try:
             db_pool = await asyncpg.create_pool(
@@ -55,16 +71,20 @@ async def startup():
                 port=int(os.getenv("DB_PORT", 5432)),
                 database=os.getenv("DB_NAME"),
                 user=os.getenv("DB_USER"),
-                password=os.getenv("DB_PASSWORD")
+                password=os.getenv("DB_PASSWORD"),
+                min_size=1,
+                max_size=3
             )
+            logger.info("PostgreSQL connection successful")
             break
         except Exception as e:
-            print(f"Database connection attempt {attempt + 1} failed: {e}")
+            logger.error(f"Database connection attempt {attempt + 1} failed: {e}")
             if attempt == 9:
                 raise
             await asyncio.sleep(2 ** min(attempt, 4))
 
     # S3 client
+    logger.info("Initializing S3 client...")
     s3 = boto3.client(
         's3',
         endpoint_url=os.getenv("AWS_ENDPOINT"),
@@ -75,6 +95,7 @@ async def startup():
     )
 
     # Redis client with retry
+    logger.info("Starting Redis connection...")
     for attempt in range(5):
         try:
             redis_client = redis.Redis(
@@ -83,14 +104,16 @@ async def startup():
                 decode_responses=True
             )
             redis_client.ping()  # Test connection
+            logger.info("Redis connection successful")
             break
         except Exception as e:
-            print(f"Redis connection attempt {attempt + 1} failed: {e}")
+            logger.error(f"Redis connection attempt {attempt + 1} failed: {e}")
             if attempt == 4:
                 raise
             await asyncio.sleep(2 ** attempt)
 
     # Initialize database schema
+    logger.info("Initializing database schema...")
     async with db_pool.acquire() as conn:
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS documents (
@@ -101,6 +124,10 @@ async def startup():
                 text_preview TEXT
             )
         """)
+    
+    # Final memory check
+    memory_info = process.memory_info()
+    logger.info(f"Startup complete. Final memory usage: {memory_info.rss / 1024 / 1024:.2f}MB")
 
 @app.post("/upload")
 async def upload_document(file: UploadFile = File(...)):
