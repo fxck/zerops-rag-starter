@@ -33,6 +33,8 @@ zerops:
     run:
       base: python@3.11
       prepareCommands:
+        - echo "System info:" && uname -a && python3 --version && pip --version
+        - sudo uv pip install --system torch==2.1.0 --index-url https://download.pytorch.org/whl/cpu
         - sudo uv pip install --system -r ./processor/requirements.txt
       start: python processor.py
 
