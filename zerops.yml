@@ -36,7 +36,6 @@ zerops:
         - uv pip install --system -r ./processor/requirements.txt
       start: python processor.py
 
-  # Dashboard
   - setup: dashboard
     build:
       deployFiles:
