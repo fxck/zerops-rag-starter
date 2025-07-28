@@ -1,16 +1,16 @@
 zerops:
   - setup: api
     build:
-      deployFiles: ./api
+      deployFiles: ./api/~
       addToRunPrepare:
-        - requirements.txt
+        - .api/requirements.txt
     run:
       base: python@3.11
       ports:
         - port: 8000
           httpSupport: true
       prepareCommands:
-        - uv pip install --system -r requirements.txt
+        - uv pip install --system -r ./api/requirements.txt
       initCommands:
         - |
           zsc execOnce qdrant-init -- curl -X PUT \
@@ -27,21 +27,20 @@ zerops:
 
   - setup: processor
     build:
-      deployFiles: ./processor
+      deployFiles: ./processor/~
       addToRunPrepare:
-        - requirements.txt
+        - ./processor/requirements.txt
     run:
       base: python@3.11
       prepareCommands:
-        - uv pip install --system -r requirements.txt
+        - uv pip install --system -r ./processor/requirements.txt
       start: python processor.py
 
   # Dashboard
   - setup: dashboard
     build:
-      deploy: ./dashboard
       deployFiles:
-        - index.html
+        - ./dashboard/~
     run:
       base: static
       envReplace:
