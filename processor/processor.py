@@ -81,7 +81,11 @@ async def process_document(msg):
         await conn.close()
 
 async def main():
-    nc = await nats.connect(os.getenv("NATS_URL"))
+    nc = await nats.connect(
+        os.getenv("NATS_URL"),
+        user=os.getenv("NATS_USER"),
+        password=os.getenv("NATS_PASSWORD")
+    )
 
     # Subscribe to processing queue
     sub = await nc.subscribe("document.process", cb=process_document)

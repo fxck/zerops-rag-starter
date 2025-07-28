@@ -18,7 +18,9 @@ project:
     AWS_USE_PATH_STYLE_ENDPOINT: "true"
 
     # NATS
-    NATS_URL: nats://${queue_hostname}:4222
+    NATS_URL: nats://${queue_hostname}:${queue_port}
+    NATS_USER: ${queue_user}
+    NATS_PASSWORD: ${queue_password}
 
     # Qdrant
     QDRANT_URL: ${qdrant_connectionString}

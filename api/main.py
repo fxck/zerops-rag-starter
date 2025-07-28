@@ -30,8 +30,12 @@ redis_client = None
 async def startup():
     global nc, db_pool, s3, redis_client
 
-    # NATS connection (no auth needed)
-    nc = await nats.connect(os.getenv("NATS_URL"))
+    # NATS connection with authentication
+    nc = await nats.connect(
+        os.getenv("NATS_URL"),
+        user=os.getenv("NATS_USER"),
+        password=os.getenv("NATS_PASSWORD")
+    )
 
     # PostgreSQL connection
     db_pool = await asyncpg.create_pool(
