@@ -33,7 +33,7 @@ zerops:
     run:
       base: python@3.11
       prepareCommands:
-        - sudo uv pip install --system --extra-index-url https://download.pytorch.org/whl/cpu -r ./processor/requirements.txt
+        - sudo uv pip install --system -r ./processor/requirements.txt
       start: python processor.py
 
   - setup: dashboard
