@@ -10,7 +10,7 @@ zerops:
         - port: 8000
           httpSupport: true
       prepareCommands:
-        - uv pip install --system -r ./api/requirements.txt
+        - sudo uv pip install --system -r ./api/requirements.txt
       initCommands:
         - |
           zsc execOnce qdrant-init -- curl -X PUT \
@@ -33,7 +33,7 @@ zerops:
     run:
       base: python@3.11
       prepareCommands:
-        - uv pip install --system -r ./processor/requirements.txt
+        - sudo uv pip install --system -r ./processor/requirements.txt
       start: python processor.py
 
   - setup: dashboard
