@@ -1,6 +1,8 @@
-# ESG Legal Compliance RAG - Hello World
+# RAG Starter for Zerops
 
-A minimal demonstration of an ESG Legal Compliance RAG (Retrieval-Augmented Generation) system deployed on Zerops infrastructure.
+A production-ready RAG (Retrieval-Augmented Generation) infrastructure starter that demonstrates how to build and deploy AI/LLM applications on Zerops. This is a complete working example with all the services you need for a RAG application, but with simplified implementations to keep it approachable.
+
+[![Deploy to Zerops](https://github.com/zeropsio/recipe-shared-assets/blob/main/deploy-button/green/deploy-button.svg)](https://app.zerops.io/recipe/rag-starter)
 
 ## Architecture
 
@@ -38,49 +40,18 @@ This system demonstrates a complete document processing and search pipeline:
 - ✅ Search result caching
 - ✅ Service health checks
 
-## Deployment
+## Quick Start
 
-### Prerequisites
+### One-Click Deploy
 
-1. Zerops account with sufficient credits
-2. Project configured with the required services
+Click the deploy button above to automatically create a new Zerops project with all required services and deploy this application.
 
-### Step 1: Create Services
+### Manual Deployment
 
-Create the following services in Zerops:
-
-```yaml
-services:
-  - hostname: db
-    type: postgresql@16
-    mode: NON_HA
-  - hostname: cache
-    type: valkey@7.2
-    mode: NON_HA
-  - hostname: queue
-    type: nats@2
-    mode: NON_HA
-  - hostname: qdrant
-    type: qdrant@1.12
-    mode: NON_HA
-  - hostname: storage
-    type: object-storage
-    objectStorageSize: 2
-    objectStoragePolicy: public-read
-```
-
-### Step 2: Deploy Application
-
-```bash
-# From project root
-zcli push
-```
-
-### Step 3: Verify Deployment
-
-1. Check service status at the dashboard
-2. Upload a test document
-3. Perform a search query
+1. Fork this repository
+2. In Zerops, import `zerops-import.yml` to create the project and services
+3. Connect your GitHub repository for automatic deployments
+4. Or use Zerops CLI: `zcli push`
 
 ## Usage
 
@@ -138,12 +109,30 @@ python processor/processor.py
 - **Service Logs**: Available in Zerops dashboard
 - **Qdrant UI**: Available at Qdrant service URL
 
-## Limitations
+## Where to Plug In Your LLM
 
-This is a "Hello World" implementation with the following limitations:
+This starter provides the infrastructure - you bring the AI:
 
-- No authentication/authorization
-- Basic text extraction (first 500 chars)
-- Dummy embeddings for search queries in demo mode
-- Limited error handling
-- Single-tenant design
+1. **Text Processing** (`processor/processor.py:75`): Replace basic text extraction with proper PDF parsing and chunking
+2. **Query Embeddings** (`api/main.py:195`): Replace dummy vectors with actual query embeddings
+3. **Response Generation**: Add an LLM endpoint to generate answers from retrieved documents
+4. **Model Selection**: The processor uses `all-MiniLM-L6-v2` - swap for your preferred embedding model
+
+## What's Included vs What You Build
+
+**Infrastructure (Ready to Use)**:
+- ✅ Scalable Python services with auto-scaling
+- ✅ Vector database (Qdrant) with collections
+- ✅ PostgreSQL for metadata
+- ✅ Redis/Valkey for caching  
+- ✅ NATS for async job processing
+- ✅ S3-compatible object storage
+- ✅ Health monitoring endpoints
+- ✅ Internal networking & service discovery
+
+**AI Logic (You Implement)**:
+- 🔧 Your choice of embedding model
+- 🔧 Document chunking strategy
+- 🔧 LLM integration (OpenAI, Anthropic, Llama, etc.)
+- 🔧 Advanced search & retrieval logic
+- 🔧 Authentication & multi-tenancy
