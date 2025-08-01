@@ -1,5 +1,6 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 import asyncpg
 import httpx
 import nats
@@ -9,6 +10,9 @@ import uuid
 import json
 import os
 from datetime import datetime
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = FastAPI(title="ESG RAG Hello World")
 

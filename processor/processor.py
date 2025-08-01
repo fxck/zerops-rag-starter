@@ -7,7 +7,11 @@ import httpx
 import os
 import logging
 import resource
+from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
